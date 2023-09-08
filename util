@@ -1,0 +1,61 @@
+from sklearn.metrics import precision_score, recall_score, f1_score
+
+def weighted_f1_score(y_true, y_pred, label_weights):
+    """
+    Calculate the F1 score macro with different weights for each label.
+    
+    Parameters:
+        y_true (array-like): True labels.
+        y_pred (array-like): Predicted labels.
+        label_weights (dict): Dictionary of label weights, where keys are labels and values are weights.
+
+    Returns:
+        weighted_f1 (float): Weighted F1 score macro.
+    """
+    unique_labels = set(y_true + y_pred)
+
+    # Initialize variables to store precision, recall, and f1_score
+    precision_total = 0
+    recall_total = 0
+    f1_score_total = 0
+
+    # Calculate precision, recall, and F1 score for each label
+    for label in unique_labels:
+        if label in label_weights:
+            weight = label_weights[label]
+        else:
+            weight = 1  # Default weight is 1 if not specified
+
+        # Calculate precision and recall for the current label
+        precision = precision_score(y_true, y_pred, labels=[label], average='binary')
+        recall = recall_score(y_true, y_pred, labels=[label], average='binary')
+
+        # Calculate F1 score for the current label
+        if precision + recall == 0:
+            f1_score = 0
+        else:
+            f1_score = (2 * precision * recall) / (precision + recall)
+
+        # Weight the F1 score and add it to the totals
+        precision_total += weight * precision
+        recall_total += weight * recall
+        f1_score_total += weight * f1_score
+
+    # Calculate weighted average precision and recall
+    weighted_average_precision = precision_total / len(unique_labels)
+    weighted_average_recall = recall_total / len(unique_labels)
+
+    # Calculate the macro F1 score
+    if weighted_average_precision + weighted_average_recall == 0:
+        weighted_f1 = 0
+    else:
+        weighted_f1 = (2 * weighted_average_precision * weighted_average_recall) / (weighted_average_precision + weighted_average_recall)
+
+    return weighted_f1
+
+# Example usage:
+y_true = [0, 1, 2, 0, 1, 2]
+y_pred = [0, 2, 1, 0, 0, 1]
+label_weights = {0: 0.5, 1: 1.0, 2: 2.0}
+result = weighted_f1_score(y_true, y_pred, label_weights)
+print("Weighted F1 Score:", result)
