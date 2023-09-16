@@ -1,0 +1,78 @@
+thisworkbook:
+Private Sub Workbook_Open()
+
+    Dim sht As Worksheet
+    Dim cht As ChartObject
+    InitializeSheets
+
+    For Each sht In ThisWorkbook.Sheets
+        For Each cht In sht.ChartObjects
+            cht.OnAction = "Chart_Click"
+        Next cht
+    Next sht
+
+End Sub
+
+类模块：
+Public WithEvents Sheet As Worksheet
+
+Private Sub Sheet_SelectionChange(ByVal Target As Range)
+    ResetChart
+End Sub
+
+模块：
+Dim OriginalWidth As Double
+Dim OriginalHeight As Double
+Dim chartIsEnlarged As Boolean
+Dim enlargedChart As ChartObject
+Dim coll As New Collection
+
+Sub Chart_Click()
+    On Error Resume Next
+    Dim clickedChart As ChartObject
+    Set clickedChart = ActiveSheet.ChartObjects(Application.Caller)
+    On Error GoTo 0
+
+    If Not clickedChart Is Nothing Then
+        Application.ScreenUpdating = False
+        
+        If chartIsEnlarged And Not enlargedChart Is Nothing Then
+            enlargedChart.Width = OriginalWidth
+            enlargedChart.Height = OriginalHeight
+            Set enlargedChart = Nothing
+            chartIsEnlarged = False
+        End If
+        
+        If Not chartIsEnlarged Then
+            OriginalWidth = clickedChart.Width
+            OriginalHeight = clickedChart.Height
+            clickedChart.Width = 600
+            clickedChart.Height = 400
+            Set enlargedChart = clickedChart
+            chartIsEnlarged = True
+        End If
+
+        Application.ScreenUpdating = True
+    End If
+End Sub
+
+Sub ResetChart()
+    If chartIsEnlarged And Not enlargedChart Is Nothing Then
+        enlargedChart.Width = OriginalWidth
+        enlargedChart.Height = OriginalHeight
+        Set enlargedChart = Nothing
+        chartIsEnlarged = False
+    End If
+End Sub
+
+
+Sub InitializeSheets()
+    Dim ws As Worksheet
+    Dim cls As clsWorksheet
+    For Each ws In ThisWorkbook.Worksheets
+        Set cls = New clsWorksheet
+        Set cls.Sheet = ws
+        coll.Add cls
+    Next ws
+End Sub
+
