@@ -1,36 +1,47 @@
-Private Sub Chart_MouseDown(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
-    If Button = 1 Then ' Check if left mouse button is clicked
-        ActiveChart.HasAxis(xlCategory, xlPrimary) = False ' Disable X-axis scaling
-        ActiveChart.HasAxis(xlValue, xlPrimary) = False ' Disable Y-axis scaling
-        ActiveChart.Parent.Shapes("Rectangle").Delete ' Delete any existing rectangle
-        Set rect = ActiveChart.Parent.Shapes.AddShape(msoShapeRectangle, x, y, 0, 0) ' Create a rectangle shape
-        rect.Name = "Rectangle"
-        rect.Line.Visible = msoFalse ' Make the rectangle border invisible
-        SetStartPoint rect, x, y ' Set the starting point of the rectangle
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    Dim ChartObj As ChartObject
+    Dim ZoomArea As Range
+    
+    ' 检查单击的是否是图表对象
+    On Error Resume Next
+    Set ChartObj = Target.TopLeftCell.Parent.ChartObjects(1)
+    On Error GoTo 0
+    
+    If Not ChartObj Is Nothing Then
+        ' 禁用工作表的选择
+        Me.EnableSelection = xlNoRestrictions
+        ' 记住图表的起始位置
+        Set ZoomArea = ChartObj.Chart.PlotArea
+        
+        ' 启用工作表的选择，以便选择区域
+        Me.EnableSelection = xlUnlockedCells
+        
+        ' 进入图表的放大模式
+        Application.OnKey "~", "ResetZoom"
+        
+        ' 设置全局变量以存储图表和区域信息
+        Set TargetChart = ChartObj
+        Set ZoomingArea = ZoomArea
     End If
 End Sub
 
-Private Sub Chart_MouseMove(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
-    If Button = 1 And Not rect Is Nothing Then ' Check if left mouse button is held down and a rectangle exists
-        SetEndPoint rect, x, y ' Set the ending point of the rectangle
+Sub ResetZoom()
+    ' 重置图表的大小
+    If Not TargetChart Is Nothing And Not ZoomingArea Is Nothing Then
+        TargetChart.Chart.PlotArea.Select
+        With Selection
+            .Top = ZoomingArea.Top
+            .Left = ZoomingArea.Left
+            .Width = ZoomingArea.Width
+            .Height = ZoomingArea.Height
+        End With
+        
+        ' 清除全局变量
+        Set TargetChart = Nothing
+        Set ZoomingArea = Nothing
+        
+        ' 重新启用工作表的选择
+        ActiveSheet.EnableSelection = xlUnlockedCells
     End If
 End Sub
 
-Private Sub Chart_MouseUp(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
-    If Button = 1 And Not rect Is Nothing Then ' Check if left mouse button is released and a rectangle exists
-        ActiveChart.HasAxis(xlCategory, xlPrimary) = True ' Enable X-axis scaling
-        ActiveChart.HasAxis(xlValue, xlPrimary) = True ' Enable Y-axis scaling
-        rect.Delete ' Delete the rectangle
-        Set rect = Nothing ' Reset the rectangle object
-    End If
-End Sub
-
-Private Sub SetStartPoint(ByRef rect As Shape, ByVal x As Long, ByVal y As Long)
-    rect.Left = x
-    rect.Top = y
-End Sub
-
-Private Sub SetEndPoint(ByRef rect As Shape, ByVal x As Long, ByVal y As Long)
-    rect.Width = x - rect.Left
-    rect.Height = y - rect.Top
-End Sub
