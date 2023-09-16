@@ -1,0 +1,85 @@
+Option Explicit
+
+Dim DrawingRectangle As Boolean
+Dim StartX As Single
+Dim StartY As Single
+Dim EndX As Single
+Dim EndY As Single
+
+Sub ZoomChartWithRectangle()
+    Dim ChartObject As ChartObject
+    Dim ChartArea As ChartArea
+    
+    ' Check if a chart is selected
+    On Error Resume Next
+    Set ChartObject = ActiveSheet.ChartObjects(1)
+    On Error GoTo 0
+    
+    If Not ChartObject Is Nothing Then
+        Set ChartArea = ChartObject.Chart.ChartArea
+        ChartArea.Select
+    Else
+        MsgBox "Please select a chart before using this feature.", vbExclamation, "No Chart Selected"
+        Exit Sub
+    End If
+End Sub
+
+Sub Chart_MouseDown(ByVal Button As Long, ByVal Shift As Long, ByVal X As Long, ByVal Y As Long)
+    If Button = 1 Then
+        DrawingRectangle = True
+        StartX = X
+        StartY = Y
+    End If
+End Sub
+
+Sub Chart_MouseMove(ByVal Button As Long, ByVal Shift As Long, ByVal X As Long, ByVal Y As Long)
+    If DrawingRectangle Then
+        EndX = X
+        EndY = Y
+        
+        Dim LeftX As Single
+        Dim TopY As Single
+        Dim WidthX As Single
+        Dim HeightY As Single
+        
+        ' Calculate the coordinates of the rectangle
+        LeftX = StartX
+        TopY = StartY
+        WidthX = EndX - StartX
+        HeightY = EndY - StartY
+        
+        ' Draw a transparent rectangle
+        ActiveSheet.Shapes.AddShape msoShapeRectangle, LeftX, TopY, WidthX, HeightY
+        With Selection.ShapeRange
+            .Fill.Transparency = 0.5 ' Adjust the transparency as needed
+            .Line.Visible = msoFalse ' No outline
+        End With
+    End If
+End Sub
+
+Sub Chart_MouseUp(ByVal Button As Long, ByVal Shift As Long, ByVal X As Long, ByVal Y As Long)
+    If DrawingRectangle Then
+        DrawingRectangle = False
+        Dim ChartObject As ChartObject
+        Set ChartObject = ActiveSheet.ChartObjects(1)
+        
+        ' Calculate the zoomed area
+        Dim LeftX As Single
+        Dim TopY As Single
+        Dim WidthX As Single
+        Dim HeightY As Single
+        
+        LeftX = WorksheetFunction.Min(StartX, EndX)
+        TopY = WorksheetFunction.Min(StartY, EndY)
+        WidthX = Abs(EndX - StartX)
+        HeightY = Abs(EndY - StartY)
+        
+        ' Apply the zoom to the chart
+        With ChartObject.Chart
+            .Axes(xlCategory).MinimumScale = LeftX
+            .Axes(xlCategory).MaximumScale = LeftX + WidthX
+            .Axes(xlValue).MinimumScale = TopY
+            .Axes(xlValue).MaximumScale = TopY + HeightY
+        End With
+    End If
+End Sub
