@@ -1,0 +1,36 @@
+Private Sub Chart_MouseDown(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
+    If Button = 1 Then ' Check if left mouse button is clicked
+        ActiveChart.HasAxis(xlCategory, xlPrimary) = False ' Disable X-axis scaling
+        ActiveChart.HasAxis(xlValue, xlPrimary) = False ' Disable Y-axis scaling
+        ActiveChart.Parent.Shapes("Rectangle").Delete ' Delete any existing rectangle
+        Set rect = ActiveChart.Parent.Shapes.AddShape(msoShapeRectangle, x, y, 0, 0) ' Create a rectangle shape
+        rect.Name = "Rectangle"
+        rect.Line.Visible = msoFalse ' Make the rectangle border invisible
+        SetStartPoint rect, x, y ' Set the starting point of the rectangle
+    End If
+End Sub
+
+Private Sub Chart_MouseMove(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
+    If Button = 1 And Not rect Is Nothing Then ' Check if left mouse button is held down and a rectangle exists
+        SetEndPoint rect, x, y ' Set the ending point of the rectangle
+    End If
+End Sub
+
+Private Sub Chart_MouseUp(ByVal Button As Long, ByVal Shift As Long, ByVal x As Long, ByVal y As Long)
+    If Button = 1 And Not rect Is Nothing Then ' Check if left mouse button is released and a rectangle exists
+        ActiveChart.HasAxis(xlCategory, xlPrimary) = True ' Enable X-axis scaling
+        ActiveChart.HasAxis(xlValue, xlPrimary) = True ' Enable Y-axis scaling
+        rect.Delete ' Delete the rectangle
+        Set rect = Nothing ' Reset the rectangle object
+    End If
+End Sub
+
+Private Sub SetStartPoint(ByRef rect As Shape, ByVal x As Long, ByVal y As Long)
+    rect.Left = x
+    rect.Top = y
+End Sub
+
+Private Sub SetEndPoint(ByRef rect As Shape, ByVal x As Long, ByVal y As Long)
+    rect.Width = x - rect.Left
+    rect.Height = y - rect.Top
+End Sub
