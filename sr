@@ -1,0 +1,48 @@
+import numpy as np
+from scipy.optimize import minimize
+
+# Define the expected returns and volatilities for each asset
+expected_returns = [0.08, 0.1, 0.12, 0.15, 0.18, 0.2, 0.22]
+volatilities = [0.12, 0.14, 0.18, 0.22, 0.26, 0.3, 0.34]
+
+# Number of assets
+num_assets = len(expected_returns)
+
+# Define the objective function to maximize the Sharpe ratio
+def negative_sharpe_ratio(weights):
+    portfolio_return = np.sum(weights * expected_returns)
+    portfolio_volatility = np.sqrt(np.dot(weights, np.dot(np.cov(expected_returns, ddof=0), weights)))
+    sharpe_ratio = -portfolio_return / portfolio_volatility  # Negative to maximize
+    return sharpe_ratio
+
+# Define equality constraint: sum of weights equals 0
+def weight_sum_constraint(weights):
+    return np.sum(weights)
+
+# Define bounds for weights (-1 to 1)
+bounds = [(-1, 1)] * num_assets
+
+# Initial guess for weights (can be any reasonable values)
+initial_weights = np.zeros(num_assets)
+
+# Constraint definition
+constraints = ({'type': 'eq', 'fun': weight_sum_constraint})
+
+# Perform the optimization to maximize the Sharpe ratio
+result = minimize(negative_sharpe_ratio, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+
+# Extract the optimal weights
+optimal_weights = result.x
+
+# Display the optimal weights
+print("Optimal Weights:")
+for i in range(num_assets):
+    print(f"Asset {i+1}: {optimal_weights[i]:.4f}")
+
+# Calculate the portfolio expected return and volatility
+portfolio_return = np.sum(optimal_weights * expected_returns)
+portfolio_volatility = np.sqrt(np.dot(optimal_weights, np.dot(np.cov(expected_returns, ddof=0), optimal_weights)))
+
+print("\nPortfolio Metrics:")
+print(f"Expected Return: {portfolio_return:.4f}")
+print(f"Volatility (Standard Deviation): {portfolio_volatility:.4f}")
